@@ -2477,7 +2477,7 @@ void CopyConstrain::apply(ScheduleDAGInstrs *DAGInstrs) {
 
 static const unsigned InvalidCycle = ~0U;
 
-SchedBoundary::~SchedBoundary() { delete HazardRec; }
+SchedBoundary::~SchedBoundary() = default;
 
 /// Given a Count of resource usage and a Latency value, return true if a
 /// SchedBoundary becomes resource limited.
@@ -2496,10 +2496,8 @@ void SchedBoundary::reset() {
   // A new HazardRec is created for each DAG and owned by SchedBoundary.
   // Destroying and reconstructing it is very expensive though. So keep
   // invalid, placeholder HazardRecs.
-  if (HazardRec && HazardRec->isEnabled()) {
-    delete HazardRec;
-    HazardRec = nullptr;
-  }
+  if (HazardRec && HazardRec->isEnabled())
+    HazardRec.reset();
   Available.clear();
   Pending.clear();
   CheckPending = false;
@@ -3660,12 +3658,10 @@ void GenericScheduler::initialize(ScheduleDAGMI *dag) {
   // Initialize the HazardRecognizers. If itineraries don't exist, are empty, or
   // are disabled, then these HazardRecs will be disabled.
   const InstrItineraryData *Itin = SchedModel->getInstrItineraries();
-  if (!Top.HazardRec) {
-    Top.HazardRec = DAG->TII->CreateTargetMIHazardRecognizer(Itin, DAG);
-  }
-  if (!Bot.HazardRec) {
-    Bot.HazardRec = DAG->TII->CreateTargetMIHazardRecognizer(Itin, DAG);
-  }
+  if (!Top.HazardRec)
+    Top.HazardRec.reset(DAG->TII->CreateTargetMIHazardRecognizer(Itin, DAG));
+  if (!Bot.HazardRec)
+    Bot.HazardRec.reset(DAG->TII->CreateTargetMIHazardRecognizer(Itin, DAG));
   TopCand.SU = nullptr;
   BotCand.SU = nullptr;
 
@@ -4325,12 +4321,10 @@ void PostGenericScheduler::initialize(ScheduleDAGMI *Dag) {
   // Initialize the HazardRecognizers. If itineraries don't exist, are empty,
   // or are disabled, then these HazardRecs will be disabled.
   const InstrItineraryData *Itin = SchedModel->getInstrItineraries();
-  if (!Top.HazardRec) {
-    Top.HazardRec = DAG->TII->CreateTargetMIHazardRecognizer(Itin, DAG);
-  }
-  if (!Bot.HazardRec) {
-    Bot.HazardRec = DAG->TII->CreateTargetMIHazardRecognizer(Itin, DAG);
-  }
+  if (!Top.HazardRec)
+    Top.HazardRec.reset(DAG->TII->CreateTargetMIHazardRecognizer(Itin, DAG));
+  if (!Bot.HazardRec)
+    Bot.HazardRec.reset(DAG->TII->CreateTargetMIHazardRecognizer(Itin, DAG));
   TopClusterID = InvalidClusterId;
   BotClusterID = InvalidClusterId;
 }
