@@ -104,8 +104,8 @@ bool AMDGPUReserveWWMRegs::run(MachineFunction &MF) {
       MO.setIsRenamable(false);
   }
 
-  // Now clear the NonWWMRegMask earlier set during wwm-regalloc.
-  MFI->clearNonWWMRegAllocMask();
+  // Now clear the PerlaneVGPRMask earlier set during wwm-regalloc.
+  MFI->clearPerlaneVGPRAllocMask();
 
   return Changed;
 }
