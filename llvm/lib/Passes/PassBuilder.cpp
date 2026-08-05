@@ -578,10 +578,9 @@ PassBuilder::PassBuilder(TargetMachine *TM, PipelineTuningOptions PTO,
         {
             switch (pass.type)
             {
-              // TODO
-              // case LeetObfuscator::SettingsParser::PassType::StringEncryptionPass:
-              //     passManager.addPass(LeetObfuscator::StringEncryptionPass(pass.parameters));
-              //     break;
+              case LeetObfuscator::SettingsParser::PassType::StringEncryptionPass:
+                  passManager.addPass(LeetObfuscator::StringEncryptionPass(pass.parameters));
+                  break;
               case LeetObfuscator::SettingsParser::PassType::MBAPass:
                   passManager.addPass(LeetObfuscator::MBAPass(pass.parameters));
                   break;
