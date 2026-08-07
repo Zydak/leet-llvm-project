@@ -591,7 +591,18 @@ void X86PassConfig::addPreEmitPass2() {
   addPass(createX86SpeculativeExecutionSideEffectSuppression());
   addPass(createX86IndirectThunksPass());
   addPass(createX86ReturnThunksPass());
-  addPass(new LeetObfuscator::NanomitesMachineCodePass());
+
+  LeetObfuscator::SettingsParser::GlobalAttributes globalSettings = LeetObfuscator::SettingsParser::ParseGlobalAttributes();
+  for (auto& pass : globalSettings.passes)
+  {
+    if (pass.type == LeetObfuscator::SettingsParser::PassType::NanomitesPass)
+    {
+      addPass(new LeetObfuscator::NanomitesMachineCodePass());
+      break;
+    }
+  }
+
+  
 
   // Insert extra int3 instructions after trailing call instructions to avoid
   // issues in the unwinder.

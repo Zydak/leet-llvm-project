@@ -23,6 +23,7 @@
 #include "../../../../Src/Passes/DispatcherPass.h"
 #include "../../../../Src/Passes/MBAPass.h"
 #include "../../../../Src/Passes/NanomitesPass.h"
+#include "../../../../Src/Passes/Logger.h"
 #include "../../../../Src/Passes/SettingsParser.h"
 #include "../../../../Src/Passes/StringEncryptionPass.h"
 #include "llvm/ADT/StringSwitch.h"
