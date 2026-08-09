@@ -564,15 +564,14 @@ PassBuilder::PassBuilder(TargetMachine *TM, PipelineTuningOptions PTO,
     });
   }
 
-  registerOptimizerLastEPCallback(
-      [](ModulePassManager &passManager, OptimizationLevel, ThinOrFullLTOPhase)
+  LeetObfuscator::SettingsParser::GlobalAttributes globalSettings = LeetObfuscator::SettingsParser::ParseGlobalAttributes();
+  LeetObfuscator::RandomNumberGenerator::CreateGlobalRandomNumberGenerator(globalSettings.defaultRuntimeSeed);
+  llvm::errs() << "RUNTIME SEED: " << globalSettings.defaultRuntimeSeed << "\n";
+  registerPipelineStartEPCallback(
+      [globalSettings](ModulePassManager &passManager, OptimizationLevel)
       {
         // Annotation pass is mandatory
         passManager.addPass(LeetObfuscator::AnnotationPass());
-
-        LeetObfuscator::SettingsParser::GlobalAttributes globalSettings = LeetObfuscator::SettingsParser::ParseGlobalAttributes();
-        LeetObfuscator::RandomNumberGenerator::CreateGlobalRandomNumberGenerator(globalSettings.defaultRuntimeSeed);
-        llvm::errs() << "RUNTIME SEED: " << globalSettings.defaultRuntimeSeed << "\n";
 
         // add passes according to the config
         for (auto& pass : globalSettings.passes)
@@ -581,6 +580,24 @@ PassBuilder::PassBuilder(TargetMachine *TM, PipelineTuningOptions PTO,
             {
               case LeetObfuscator::SettingsParser::PassType::StringEncryptionPass:
                   passManager.addPass(LeetObfuscator::StringEncryptionPass(pass.parameters));
+                  break;
+              default:
+                  // ignore
+                  break;
+            }
+        }
+      });
+
+  registerOptimizerLastEPCallback(
+      [globalSettings](ModulePassManager &passManager, OptimizationLevel, ThinOrFullLTOPhase)
+      {
+        // add passes according to the config
+        for (auto& pass : globalSettings.passes)
+        {
+            switch (pass.type)
+            {
+              case LeetObfuscator::SettingsParser::PassType::StringEncryptionPass:
+                  // ignore
                   break;
               case LeetObfuscator::SettingsParser::PassType::MBAPass:
                   passManager.addPass(LeetObfuscator::MBAPass(pass.parameters));
