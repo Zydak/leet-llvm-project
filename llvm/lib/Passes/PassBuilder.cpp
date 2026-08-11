@@ -565,8 +565,12 @@ PassBuilder::PassBuilder(TargetMachine *TM, PipelineTuningOptions PTO,
   }
 
   LeetObfuscator::SettingsParser::GlobalAttributes globalSettings = LeetObfuscator::SettingsParser::ParseGlobalAttributes();
-  LeetObfuscator::RandomNumberGenerator::CreateGlobalRandomNumberGenerator(globalSettings.defaultRuntimeSeed);
-  llvm::errs() << "RUNTIME SEED: " << globalSettings.defaultRuntimeSeed << "\n";
+  uint64_t runtimeSeed = 0;
+  const auto* seedArg = LeetObfuscator::SettingsParser::FindArgument(globalSettings.parameters, "runtimeSeed");
+  if (seedArg && !seedArg->empty())
+    runtimeSeed = std::stoull(seedArg->front());
+  LeetObfuscator::RandomNumberGenerator::CreateGlobalRandomNumberGenerator(runtimeSeed);
+  llvm::errs() << "RUNTIME SEED: " << runtimeSeed << "\n";
   registerPipelineStartEPCallback(
       [globalSettings](ModulePassManager &passManager, OptimizationLevel)
       {
