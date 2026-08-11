@@ -10,6 +10,7 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "../../../../Src/Passes/AntiAnalysisPass.h"
 #include "llvm/CodeGen/CodeGenTargetMachineImpl.h"
 #include "llvm/Analysis/RuntimeLibcallInfo.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
@@ -189,7 +190,11 @@ CodeGenTargetMachineImpl::createMCStreamer(raw_pwrite_stream &Out,
     // Create a code emitter if asked to show the encoding.
     std::unique_ptr<MCCodeEmitter> MCE;
     if (Options.MCOptions.ShowMCEncoding)
+    {
       MCE.reset(getTarget().createMCCodeEmitter(MII, Context));
+      if (MCE)
+        MCE = std::make_unique<LeetObfuscator::AntiDissasemblyEmitter>(std::move(MCE));
+    }
 
     std::unique_ptr<MCAsmBackend> MAB(
         getTarget().createMCAsmBackend(STI, MRI, Options.MCOptions));
@@ -207,6 +212,9 @@ CodeGenTargetMachineImpl::createMCStreamer(raw_pwrite_stream &Out,
     if (!MCE)
       return make_error<StringError>("createMCCodeEmitter failed",
                                      inconvertibleErrorCode());
+    std::unique_ptr<MCCodeEmitter> OwnedMCE(
+        new LeetObfuscator::AntiDissasemblyEmitter(std::unique_ptr<MCCodeEmitter>(MCE)));
+    MCE = OwnedMCE.release();
     MCAsmBackend *MAB =
         getTarget().createMCAsmBackend(STI, MRI, Options.MCOptions);
     if (!MAB)
@@ -287,6 +295,8 @@ bool CodeGenTargetMachineImpl::addPassesToEmitMC(PassManagerBase &PM,
       getTarget().createMCCodeEmitter(*getMCInstrInfo(), *Ctx));
   if (!MCE)
     return true;
+  MCE = std::make_unique<LeetObfuscator::AntiDissasemblyEmitter>(std::move(MCE));
+
   MCAsmBackend *MAB =
       getTarget().createMCAsmBackend(STI, MRI, Options.MCOptions);
   if (!MAB)
