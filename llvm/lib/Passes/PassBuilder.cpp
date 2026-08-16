@@ -26,6 +26,7 @@
 #include "../../../../Src/Passes/Logger.h"
 #include "../../../../Src/Passes/SettingsParser.h"
 #include "../../../../Src/Passes/StringEncryptionPass.h"
+#include "../../../../Src/Passes/VariableSplittingPass.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/Analysis/AliasAnalysisEvaluator.h"
 #include "llvm/Analysis/AliasSetTracker.h"
@@ -623,6 +624,9 @@ PassBuilder::PassBuilder(TargetMachine *TM, PipelineTuningOptions PTO,
                   break;
               case LeetObfuscator::SettingsParser::PassType::NanomitesPass:
                   passManager.addPass(LeetObfuscator::NanomitesPass(pass.parameters));
+                  break;
+              case LeetObfuscator::SettingsParser::PassType::VariableSplittingPass:
+                  passManager.addPass(LeetObfuscator::VariableSplittingPass(pass.parameters));
                   break;
               default:
                   llvm::errs() << "INVALID PASS WAS FOUND\n";
