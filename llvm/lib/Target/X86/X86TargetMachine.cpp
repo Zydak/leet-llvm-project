@@ -592,8 +592,8 @@ void X86PassConfig::addPreEmitPass2() {
   addPass(createX86IndirectThunksPass());
   addPass(createX86ReturnThunksPass());
 
-  LeetObfuscator::SettingsParser::GlobalAttributes globalSettings = LeetObfuscator::SettingsParser::ParseGlobalAttributes();
-  for (auto& pass : globalSettings.passes)
+  std::shared_ptr<LeetObfuscator::SettingsParser::GlobalAttributes> globalSettings = LeetObfuscator::SettingsParser::ParseGlobalAttributes();
+  for (auto& pass : globalSettings->passes)
   {
     if (pass.type == LeetObfuscator::SettingsParser::PassType::NanomitesPass)
     {

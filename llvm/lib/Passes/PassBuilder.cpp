@@ -565,11 +565,11 @@ PassBuilder::PassBuilder(TargetMachine *TM, PipelineTuningOptions PTO,
     });
   }
 
-  LeetObfuscator::SettingsParser::GlobalAttributes globalSettings = LeetObfuscator::SettingsParser::ParseGlobalAttributes();
+  std::shared_ptr<LeetObfuscator::SettingsParser::GlobalAttributes> globalSettings = LeetObfuscator::SettingsParser::ParseGlobalAttributes();
   uint64_t runtimeSeed = 0;
-  const auto* seedArg = LeetObfuscator::SettingsParser::FindArgument(globalSettings.parameters, "runtimeSeed");
+  const auto* seedArg = LeetObfuscator::SettingsParser::FindArgument(globalSettings->parameters, "runtimeSeed");
   if (seedArg && !seedArg->empty())
-    runtimeSeed = std::stoull(seedArg->front());
+    runtimeSeed = std::stoull(*seedArg);
   LeetObfuscator::RandomNumberGenerator::CreateGlobalRandomNumberGenerator(runtimeSeed);
   llvm::errs() << "RUNTIME SEED: " << runtimeSeed << "\n";
   registerPipelineStartEPCallback(
@@ -579,7 +579,7 @@ PassBuilder::PassBuilder(TargetMachine *TM, PipelineTuningOptions PTO,
         passManager.addPass(LeetObfuscator::AnnotationPass());
 
         // add passes according to the config
-        for (auto& pass : globalSettings.passes)
+        for (auto& pass : globalSettings->passes)
         {
             switch (pass.type)
             {
@@ -597,7 +597,7 @@ PassBuilder::PassBuilder(TargetMachine *TM, PipelineTuningOptions PTO,
       [globalSettings](ModulePassManager &passManager, OptimizationLevel, ThinOrFullLTOPhase)
       {
         // add passes according to the config
-        for (auto& pass : globalSettings.passes)
+        for (auto& pass : globalSettings->passes)
         {
             switch (pass.type)
             {
