@@ -288,15 +288,16 @@ static void runNewPMPasses(const Config &Conf, Module &Mod, TargetMachine *TM,
   SI.registerCallbacks(PIC, &MAM);
   PassBuilder PB(TM, Conf.PTO, PGOOpt, &PIC);
 
-  std::shared_ptr<LeetObfuscator::SettingsParser::GlobalAttributes> globalSettings = LeetObfuscator::SettingsParser::ParseGlobalAttributes();
+  static std::shared_ptr<LeetObfuscator::SettingsParser::GlobalAttributes> globalSettings = LeetObfuscator::SettingsParser::ParseGlobalAttributes();
   uint64_t runtimeSeed = 0;
   const auto* seedArg = LeetObfuscator::SettingsParser::FindArgument(globalSettings->parameters, "runtimeSeed");
   if (seedArg && !seedArg->empty())
     runtimeSeed = std::stoull(*seedArg);
   LeetObfuscator::RandomNumberGenerator::CreateGlobalRandomNumberGenerator(runtimeSeed);
   llvm::errs() << "RUNTIME SEED: " << runtimeSeed << "\n";
+  static uint32_t id = 0;
   PB.registerFullLinkTimeOptimizationEarlyEPCallback(
-      [globalSettings](ModulePassManager &passManager, OptimizationLevel)
+      [](ModulePassManager &passManager, OptimizationLevel)
       {
         // Annotation pass is mandatory
         passManager.addPass(LeetObfuscator::AnnotationPass());
@@ -317,7 +318,7 @@ static void runNewPMPasses(const Config &Conf, Module &Mod, TargetMachine *TM,
       });
 
   PB.registerFullLinkTimeOptimizationLastEPCallback(
-      [globalSettings](ModulePassManager &passManager, OptimizationLevel)
+      [](ModulePassManager &passManager, OptimizationLevel)
       {
         // add passes according to the config
         for (auto& pass : globalSettings->passes)
@@ -328,7 +329,7 @@ static void runNewPMPasses(const Config &Conf, Module &Mod, TargetMachine *TM,
                   passManager.addPass(LeetObfuscator::StringEncryptionPass(pass.parameters, false));
                   break;
               case LeetObfuscator::SettingsParser::PassType::MBAPass:
-                  passManager.addPass(LeetObfuscator::MBAPass(pass.parameters, 0));
+                  passManager.addPass(LeetObfuscator::MBAPass(pass.parameters, id++));
                   break;
               case LeetObfuscator::SettingsParser::PassType::BlockSplitterPass:
                   passManager.addPass(LeetObfuscator::BlockSplitterPass(pass.parameters));
@@ -337,7 +338,7 @@ static void runNewPMPasses(const Config &Conf, Module &Mod, TargetMachine *TM,
                   passManager.addPass(LeetObfuscator::DispatcherPass(pass.parameters));
                   break;
               case LeetObfuscator::SettingsParser::PassType::AAMBAPass:
-                  passManager.addPass(LeetObfuscator::AAMBAPass(pass.parameters));
+                  passManager.addPass(LeetObfuscator::AAMBAPass(pass.parameters, id++));
                   break;
               case LeetObfuscator::SettingsParser::PassType::AntiAnalysisPass:
                   passManager.addPass(LeetObfuscator::AntiAnalysisPass(pass.parameters));
