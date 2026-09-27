@@ -26,6 +26,7 @@
 #include "../../../../Src/Passes/SettingsParser.h"
 #include "../../../../Src/Passes/StringEncryptionPass.h"
 #include "../../../../Src/Passes/VariableSplittingPass.h"
+#include "../../../../Src/Passes/ChecksumPass.h"
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/CGSCCPassManager.h"
 #include "llvm/Analysis/ModuleSummaryAnalysis.h"
@@ -295,7 +296,6 @@ static void runNewPMPasses(const Config &Conf, Module &Mod, TargetMachine *TM,
     runtimeSeed = std::stoull(*seedArg);
   LeetObfuscator::RandomNumberGenerator::CreateGlobalRandomNumberGenerator(runtimeSeed);
   llvm::errs() << "RUNTIME SEED: " << runtimeSeed << "\n";
-  static uint32_t id = 0;
   PB.registerFullLinkTimeOptimizationEarlyEPCallback(
       [](ModulePassManager &passManager, OptimizationLevel)
       {
@@ -308,7 +308,7 @@ static void runNewPMPasses(const Config &Conf, Module &Mod, TargetMachine *TM,
             switch (pass.type)
             {
               case LeetObfuscator::SettingsParser::PassType::StringEncryptionPass:
-                  passManager.addPass(LeetObfuscator::StringEncryptionPass(pass.parameters, true));
+                  passManager.addPass(LeetObfuscator::StringEncryptionPass(pass.parameters, true, pass.id));
                   break;
               default:
                   // ignore
@@ -326,31 +326,34 @@ static void runNewPMPasses(const Config &Conf, Module &Mod, TargetMachine *TM,
             switch (pass.type)
             {
               case LeetObfuscator::SettingsParser::PassType::StringEncryptionPass:
-                  passManager.addPass(LeetObfuscator::StringEncryptionPass(pass.parameters, false));
+                  passManager.addPass(LeetObfuscator::StringEncryptionPass(pass.parameters, false, pass.id));
                   break;
               case LeetObfuscator::SettingsParser::PassType::MBAPass:
-                  passManager.addPass(LeetObfuscator::MBAPass(pass.parameters, id++));
+                  passManager.addPass(LeetObfuscator::MBAPass(pass.parameters, pass.id));
                   break;
               case LeetObfuscator::SettingsParser::PassType::BlockSplitterPass:
-                  passManager.addPass(LeetObfuscator::BlockSplitterPass(pass.parameters));
+                  passManager.addPass(LeetObfuscator::BlockSplitterPass(pass.parameters, pass.id));
                   break;
               case LeetObfuscator::SettingsParser::PassType::DispatcherPass:
-                  passManager.addPass(LeetObfuscator::DispatcherPass(pass.parameters));
+                  passManager.addPass(LeetObfuscator::DispatcherPass(pass.parameters, pass.id));
                   break;
               case LeetObfuscator::SettingsParser::PassType::AAMBAPass:
-                  passManager.addPass(LeetObfuscator::AAMBAPass(pass.parameters, id++));
+                  passManager.addPass(LeetObfuscator::AAMBAPass(pass.parameters, pass.id));
                   break;
               case LeetObfuscator::SettingsParser::PassType::AntiAnalysisPass:
-                  passManager.addPass(LeetObfuscator::AntiAnalysisPass(pass.parameters));
+                  passManager.addPass(LeetObfuscator::AntiAnalysisPass(pass.parameters, pass.id));
                   break;
               case LeetObfuscator::SettingsParser::PassType::AntiAliasingPass:
-                  passManager.addPass(LeetObfuscator::AntiAliasingPass(pass.parameters));
+                  passManager.addPass(LeetObfuscator::AntiAliasingPass(pass.parameters, pass.id));
                   break;
               case LeetObfuscator::SettingsParser::PassType::NanomitesPass:
-                  passManager.addPass(LeetObfuscator::NanomitesPass(pass.parameters));
+                  passManager.addPass(LeetObfuscator::NanomitesPass(pass.parameters, pass.id));
                   break;
               case LeetObfuscator::SettingsParser::PassType::VariableSplittingPass:
-                  passManager.addPass(LeetObfuscator::VariableSplittingPass(pass.parameters));
+                  passManager.addPass(LeetObfuscator::VariableSplittingPass(pass.parameters, pass.id));
+                  break;
+              case LeetObfuscator::SettingsParser::PassType::ChecksumPass:
+                  passManager.addPass(LeetObfuscator::ChecksumPass(pass.parameters, pass.id));
                   break;
               default:
                   llvm::errs() << "INVALID PASS WAS FOUND\n";

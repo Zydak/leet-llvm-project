@@ -34,6 +34,8 @@
 #include "llvm/Support/xxhash.h"
 #include <climits>
 
+#include "llvm/Support/CRC.h"
+
 #define DEBUG_TYPE "lld"
 
 using namespace llvm;
@@ -44,7 +46,10 @@ using namespace llvm::support::endian;
 using namespace lld;
 using namespace lld::elf;
 
+#include "../../../../Src/Passes/ChecksumPassHelper.h"
+
 namespace {
+
 // The writer writes a SymbolTable result to a file.
 template <class ELFT> class Writer {
 public:
@@ -377,6 +382,8 @@ template <class ELFT> void Writer<ELFT>::run() {
     } else {
       writeSectionsBinary();
     }
+
+    patchFunctionPrefixHeaders<ELFT>(ctx, buffer->getBufferStart());
 
     // Backfill .note.gnu.build-id section content. This is done at last
     // because the content is usually a hash value of the entire output file.
@@ -2272,6 +2279,28 @@ template <class ELFT> void Writer<ELFT>::addStartEndSymbols() {
 // gold provide the feature, and used by many programs.
 template <class ELFT>
 void Writer<ELFT>::addStartStopSymbols(OutputSection &osec) {
+  if (osec.name == ".rodata") {
+    InputSection *firstIsec = nullptr;
+    InputSection *lastIsec = nullptr;
+    for (SectionCommand *cmd : osec.commands) {
+      if (auto *isd = dyn_cast<InputSectionDescription>(cmd)) {
+        for (InputSection *isec : isd->sections) {
+          if (isec->name == ".rodata.leet_checksum") {
+            if (!firstIsec)
+              firstIsec = isec;
+            lastIsec = isec;
+          }
+        }
+      }
+    }
+    if (firstIsec && lastIsec) {
+      addOptionalRegular(ctx, "__start_leet_checksum", firstIsec, 0,
+                         ctx.arg.zStartStopVisibility);
+      addOptionalRegular(ctx, "__stop_leet_checksum", lastIsec, lastIsec->getSize(),
+                         ctx.arg.zStartStopVisibility);
+    }
+  }
+
   StringRef s = osec.name;
   if (!isValidCIdentifier(s))
     return;
