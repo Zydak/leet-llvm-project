@@ -27,6 +27,7 @@
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/MathExtras.h"
 #include "llvm/Support/TimeProfiler.h"
 #include <algorithm>
 #include <cassert>

@@ -117,6 +117,8 @@ void elf::reportRangeError(Ctx &ctx, uint8_t *loc, int64_t v, int n,
 bool elf::isAbsolute(const Symbol &sym) {
   if (sym.isUndefined())
     return true;
+  if (sym.getName().starts_with("__leet_cs_"))
+    return true;
   if (const auto *dr = dyn_cast<Defined>(&sym))
     return dr->section == nullptr; // Absolute symbol.
   return false;
